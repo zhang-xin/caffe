@@ -28,8 +28,6 @@ using namespace caffe;  // NOLINT(build/namespaces)
 using std::pair;
 using boost::scoped_ptr;
 
-DEFINE_bool(gray, false,
-    "When this option is on, treat images as grayscale ones");
 DEFINE_bool(shuffle, false,
     "Randomly shuffle the order of images and their labels");
 DEFINE_string(backend, "lmdb",
@@ -42,10 +40,8 @@ DEFINE_bool(encoded, true,
     "When this option is on, the encoded image will be save in datum");
 DEFINE_string(encode_type, "jpg",
     "Optional: What type should we encode the image as ('png','jpg',...).");
-//********************************* label_file **************************************//
 DEFINE_string(label_file, "",
     "a map from name to label");
-//********************************************************************************//
 
 int main(int argc, char** argv) {
 #ifdef USE_OPENCV
@@ -60,29 +56,24 @@ int main(int argc, char** argv) {
   gflags::SetUsageMessage("Convert a set of images to the leveldb/lmdb\n"
         "format used as input for Caffe.\n"
         "Usage:\n"
-        "    convert_imageset [FLAGS] ROOTFOLDER/ LISTFILE DB_NAME\n"
-        "The ImageNet dataset for the training demo is at\n"
-        "    http://www.image-net.org/download-images\n");
+        "    convert_box_data [FLAGS] ROOTFOLDER/ LISTFILE DB_NAME\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   if (argc < 4) {
-    gflags::ShowUsageWithFlagsRestrict(argv[0], "tools/convert_imageset");
+    gflags::ShowUsageWithFlagsRestrict(argv[0], "tools/convert_box_data");
     return 1;
   }
 
-  const bool is_color = !FLAGS_gray;
   const bool check_size = FLAGS_check_size;
   const bool encoded = FLAGS_encoded;
   const string encode_type = FLAGS_encode_type;
-  //*************************************exit label_file*****************************************//
   const std::string label_file = FLAGS_label_file;
   if (label_file == "") {
     LOG(ERROR) << "empty label file";
     return 1;
   }
-  //********************************************************************************//
 
-  //******************************** produce label_file map***************************************//
+  // produce label_file map
   std::ifstream labelfile(label_file.c_str());
   std::map<std::string, int> label_map;
   std::string tmp_line;
@@ -90,9 +81,8 @@ int main(int argc, char** argv) {
     size_t pos = tmp_line.find_last_of(' ');
     label_map[tmp_line.substr(0, pos)] = atoi(tmp_line.substr(pos+1).c_str());
   }
-  //********************************************************************************//
 
-  //************************************pair(jpg,xml)**************************************//
+  // pair(jpg,xml)
   std::ifstream infile(argv[2]);
   std::vector<std::pair<std::string, std::string> > lines;
   std::string line;
@@ -101,7 +91,6 @@ int main(int argc, char** argv) {
     pos = line.find_last_of(' ');
     lines.push_back(std::make_pair(line.substr(0, pos), line.substr(pos+1)));
   }
-  //********************************************************************************//
 
   if (FLAGS_shuffle) {
     // randomly shuffle data
@@ -135,17 +124,15 @@ int main(int argc, char** argv) {
       // Guess the encoding type from the file name
       string fn = lines[line_id].first;
       size_t p = fn.rfind('.');
-      if ( p == fn.npos )
+      if (p == fn.npos)
         LOG(WARNING) << "Failed to guess the encoding of '" << fn << "'";
       enc = fn.substr(p);
       std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
     }
-    //************************************************************************************//
     status = ReadBoxDataToDatum(root_folder + lines[line_id].first,
         root_folder + lines[line_id].second, label_map,
-        resize_height, resize_width, is_color, enc, &datum);
-    //************************************************************************************//
-    if (status == false) continue;
+        resize_height, resize_width, enc, &datum);
+    if (!status) continue;
     if (check_size) {
       if (!data_size_initialized) {
         data_size = datum.channels() * datum.height() * datum.width();

@@ -1,5 +1,6 @@
 #ifdef USE_OPENCV
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #endif  // USE_OPENCV
 
 #include <string>
@@ -126,6 +127,79 @@ void DataTransformer<Dtype>::Transform(const Datum& datum,
   }
 }
 
+template<typename Dtype>
+void DataTransformer<Dtype>::Transform(const Datum& datum,
+                                       Blob<Dtype>* transformed_blob,
+                                       vector<BoxLabel>* box_labels) {
+  int float_size = datum.float_data_size();
+  CHECK_GT(float_size, 0) << "Every sample must have label";
+  CHECK_EQ(float_size % 6, 0) << "Every box label has 6 labels (class, difficult, box)";
+  vector<BoxLabel> ori_labels;
+  for (int j = 0; j < float_size; j += 6) {
+    BoxLabel box_label;
+    box_label.class_label_ = datum.float_data(j);
+    box_label.difficult_ = datum.float_data(j + 1);
+    for (int k = 2; k < 6; ++k) {
+      box_label.box_[k-2] = datum.float_data(j+k);
+    }
+    ori_labels.push_back(box_label);
+  }
+
+  // If datum is encoded, decoded and transform the cv::image.
+  CHECK(datum.encoded()) << "For box data, datum must be encoded";
+  CHECK(!(param_.force_color() && param_.force_gray()))
+    << "cannot set both force_color and force_gray";
+  cv::Mat cv_img;
+  if (param_.force_color() || param_.force_gray()) {
+  // If force_color then decode in color otherwise decode in gray.
+    cv_img = DecodeDatumToCVMat(datum, param_.force_color());
+  } else {
+    cv_img = DecodeDatumToCVMatNative(datum);
+  }
+
+  if (phase_ == TEST || phase_ == TRAIN) {
+    *box_labels = ori_labels;
+    Transform(cv_img, transformed_blob);
+    return;
+  }
+
+  int img_width = cv_img.cols;
+  int img_height = cv_img.rows;
+
+  cv::Mat cv_rand_img = cv_img;
+  float rand_scale = (1.0f - Rand(30) / 100.0f);
+  int rand_w = static_cast<int>(img_width * rand_scale) - 1;
+  int rand_h = static_cast<int>(img_height * rand_scale) - 1;
+  int rand_x = Rand(img_width - rand_w);
+  int rand_y = Rand(img_height - rand_h);
+  for (int i = 0; i < ori_labels.size(); ++i) {
+    int ori_x = static_cast<int>(ori_labels[i].box_[0] * img_width);
+    int ori_y = static_cast<int>(ori_labels[i].box_[1] * img_height);
+    int ori_w = static_cast<int>(ori_labels[i].box_[2] * img_width);
+    int ori_h = static_cast<int>(ori_labels[i].box_[3] * img_height);
+    if (!(ori_x >= rand_x && ori_x < rand_x + rand_w)) {
+      continue;
+    }
+    if (!(ori_y >= rand_y && ori_y < rand_y + rand_h)) {
+      continue;
+    }
+    BoxLabel box_label;
+    box_label.difficult_ = ori_labels[i].difficult_;
+    box_label.class_label_ = ori_labels[i].class_label_;
+    box_label.box_[0] = float(ori_x - rand_x) / float(rand_w);
+    box_label.box_[1] = float(ori_y - rand_y) / float(rand_h);
+    box_label.box_[2] = float(ori_w) / float(rand_w);
+    box_label.box_[3] = float(ori_h) / float(rand_h);
+    box_labels->push_back(box_label);
+  }
+  if (box_labels->size() > 0) {
+    cv::Rect roi(rand_x, rand_y, rand_w, rand_h);
+    cv_rand_img = cv_img(roi);
+  }
+  cv::resize(cv_rand_img, cv_rand_img, cv::Size(img_width, img_height));
+  // Transform the cv::image into blob.
+  Transform(cv_rand_img, transformed_blob);
+}
 
 template<typename Dtype>
 void DataTransformer<Dtype>::Transform(const Datum& datum,

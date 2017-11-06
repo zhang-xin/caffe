@@ -37,23 +37,14 @@ void ComputeAP(const vector<pair<float, int> >& tp, int num_pos,
 template <typename Dtype>
 void setNormalizedBBox(NormalizedBBox& bbox, Dtype x, Dtype y, Dtype w, Dtype h)
 {
-  Dtype xmin = x - w/2.0;
-  Dtype xmax = x + w/2.0;
-  Dtype ymin = y - h/2.0;
-  Dtype ymax = y + h/2.0;
-
-  if (xmin < 0.0){
-    xmin = 0.0;
-  }
-  if (xmax > 1.0){
-    xmax = 1.0;
-  }
-  if (ymin < 0.0){
-    ymin = 0.0;
-  }
-  if (ymax > 1.0){
-    ymax = 1.0;
-  }  
+  Dtype xmin = x - w / 2.0;
+  Dtype xmax = x + w / 2.0;
+  Dtype ymin = y - h / 2.0;
+  Dtype ymax = y + h / 2.0;
+  if (xmin < 0.0) { xmin = 0.0; }
+  if (xmax > 1.0) { xmax = 1.0; }
+  if (ymin < 0.0) { ymin = 0.0; }
+  if (ymax > 1.0) { ymax = 1.0; }
   bbox.set_xmin(xmin);
   bbox.set_ymin(ymin);
   bbox.set_xmax(xmax);
@@ -116,15 +107,22 @@ Dtype Calc_rmse(const vector<Dtype>& box, const vector<Dtype>& truth) {
               pow(box[2]-truth[2], 2) +
               pow(box[3]-truth[3], 2));
 }
+
 template <typename Dtype>
 Dtype Overlap(Dtype x1, Dtype w1, Dtype x2, Dtype w2) {
-  Dtype l1 = x1 - w1/2;
-  Dtype l2 = x2 - w2/2;
-  Dtype left = l1 > l2 ? l1 : l2;
-  Dtype r1 = x1 + w1/2;
-  Dtype r2 = x2 + w2/2;
-  Dtype right = r1 < r2 ? r1 : r2;
+  Dtype left = std::max(x1 - w1 / 2, x2 - w2 / 2);
+  Dtype right = std::min(x1 + w1 / 2, x2 + w2 / 2);
   return right - left;
+}
+
+template <typename Dtype>
+Dtype box_iou(const vector<Dtype>& box, const vector<Dtype>& truth) {
+  Dtype w = Overlap(box[0], box[2], truth[0], truth[2]);
+  Dtype h = Overlap(box[1], box[3], truth[1], truth[3]);
+  if (w < 0 || h < 0) return 0;
+  Dtype inter_area = w * h;
+  Dtype union_area = box[2] * box[3] + truth[2] * truth[3] - inter_area;
+  return inter_area / union_area;
 }
 
 template <typename Dtype>

@@ -75,6 +75,42 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
 }
 
 #ifdef USE_OPENCV
+cv::Mat LetterboxImageToCVMat(const string& filename, int width, int height,
+    int *ori_w, int *ori_h) {
+  cv::Mat cv_img;
+  cv::Mat cv_img_origin = cv::imread(filename, CV_LOAD_IMAGE_COLOR);
+  if (!cv_img_origin.data) {
+    LOG(ERROR) << "Could not open or find file " << filename;
+    return cv_img_origin;
+  }
+  *ori_w = cv_img_origin.cols;
+  *ori_h = cv_img_origin.rows;
+
+  // letterbox image size
+  int new_w = 0;
+  int new_h = 0;
+  if (((float)width / *ori_w) < ((float)height / *ori_h)) {
+    new_w = width;
+    new_h = (int)((float)*ori_h * width / *ori_w);
+  } else {
+    new_h = height;
+    new_w = (int)((float)*ori_w * height / *ori_h);
+  }
+
+  // letterbox image
+  cv::Mat resized;
+  if (new_w != *ori_w || new_h != *ori_h) {
+    resize(cv_img_origin, resized, cv::Size(new_w, new_h));
+  } else {
+    resized = cv_img_origin;
+  }
+  cv::Mat boxed = cv::Mat::ones(height, width, CV_8UC3);
+  boxed.setTo(cv::Scalar(127, 127, 127));
+  resized.copyTo(boxed(cv::Rect((width - new_w) / 2, (height - new_h) / 2, new_w, new_h)));
+
+  return boxed;
+}
+
 cv::Mat ReadImageToCVMat(const string& filename,
     const int height, const int width, const bool is_color,
     int* ori_w, int* ori_h) {
@@ -169,26 +205,20 @@ bool ReadImageToDatum(const string& filename, const int label,
 
 bool ReadBoxDataToDatum(const string& filename, const string& annoname,
     const map<string, int>& label_map, const int height, const int width,
-    const bool is_color, const std::string & encoding, Datum* datum) {
+    const std::string & encoding, Datum* datum) {
   int ori_w, ori_h;
-  cv::Mat cv_img = ReadImageToCVMat(filename, height, width, is_color, &ori_w, &ori_h);
+  cv::Mat cv_img = LetterboxImageToCVMat(filename, width, height, &ori_w, &ori_h);
   if (cv_img.data) {
     if (encoding.size()) {
-      if ( (cv_img.channels() == 3) == is_color && !height && !width &&
-          matchExt(filename, encoding) )
-        return ReadFileToDatum(filename, annoname, label_map, ori_w, ori_h, datum);
       std::vector<uchar> buf;
-      cv::imencode("."+encoding, cv_img, buf);
-      datum->set_data(std::string(reinterpret_cast<char*>(&buf[0]),
-                      buf.size()));
+      cv::imencode("." + encoding, cv_img, buf);
+      datum->set_data(std::string(reinterpret_cast<char*>(&buf[0]), buf.size()));
       datum->set_encoded(true);
-      // read xml anno data
-      ParseXmlToDatum(annoname, label_map, ori_w, ori_h, datum);
-      return true;
+    } else {
+      CVMatToDatum(cv_img, datum);
     }
-    CVMatToDatum(cv_img, datum);
     // read xml anno data
-    ParseXmlToDatum(annoname, label_map, ori_w, ori_h, datum);
+    ParseXmlToDatum(annoname, label_map, ori_w, ori_h, width, height, datum);
     return true;
   } else {
     return false;
@@ -204,8 +234,22 @@ int name_to_label(const string& name, const map<string, int>& label_map) {
     return it->second;
 }
 
+void pos_to_letterbox(int ori_w, int ori_h, int new_w, int new_h, vector<float> &box) {
+  if (((float)new_w / ori_w) < ((float)new_h / ori_h)) {
+    int win_h = (int)((float)ori_h * new_w / ori_w);
+    // keep x/w ratio, change y/h ratio
+    box[1] = (box[1] * win_h + (new_h - win_h) / 2) / new_h;
+    box[3] = box[3] * win_h / new_h;
+  } else {
+    int win_w = (int)((float)ori_w * new_h / ori_h);
+    // keep y/h ratio, change x/w ratio
+    box[0] = (box[0] * win_w + (new_w - win_w) / 2) / new_w;
+    box[2] = box[2] * win_w / new_w;
+  }
+}
+
 void ParseXmlToDatum(const string& annoname, const map<string, int>& label_map,
-    int ori_w, int ori_h, Datum* datum) {
+    int ori_w, int ori_h, int new_w, int new_h, Datum* datum) {
   ptree pt;
   read_xml(annoname, pt);
   int width(0), height(0);
@@ -258,33 +302,14 @@ void ParseXmlToDatum(const string& annoname, const map<string, int>& label_map,
           difficult = atoi(pt2.data().c_str());
         }
       }
+      pos_to_letterbox(ori_w, ori_h, new_w, new_h, box);
       CHECK_GE(label, 0) << "label must start at 0";
-      datum->add_float_data(float(label));	//label
-      datum->add_float_data(float(difficult));	//diff
+      datum->add_float_data(float(label));
+      datum->add_float_data(float(difficult));
       for (int i = 0; i < 4; ++i) {
-        datum->add_float_data(box[i]);	//box[4]
+        datum->add_float_data(box[i]);
       }
     }
-  }
-}
-
-bool ReadFileToDatum(const string& filename, const string& annoname,
-      const map<string, int>& label_map, int ori_w, int ori_h, Datum* datum) {
-  std::streampos size;
-
-  fstream file(filename.c_str(), ios::in|ios::binary|ios::ate);
-  if (file.is_open()) {
-    size = file.tellg();
-    std::string buffer(size, ' ');
-    file.seekg(0, ios::beg);
-    file.read(&buffer[0], size);
-    file.close();
-    datum->set_data(buffer);
-    datum->set_encoded(true);
-    ParseXmlToDatum(annoname, label_map, ori_w, ori_h, datum);
-    return true;
-  } else {
-    return false;
   }
 }
 

@@ -1,11 +1,37 @@
 name: "TINY-YOLO-VOC"
 layer {
   name: "data"
-  type: "Input"
+  type: "BoxData"
   top: "data"
   top: "label"
-  input_param { shape: { dim: 1 dim: 3 dim: 416 dim: 416 }
-                shape: { dim: 1 dim: 1 dim: 30 dim: 5 } }
+  include {
+    phase: TRAIN
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  data_param {
+    source: "trainval_lmdb"
+    batch_size: 8
+    backend: LMDB
+  }
+}
+layer {
+  name: "data"
+  type: "BoxData"
+  top: "data"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  data_param {
+    source: "test2007_lmdb"
+    batch_size: 1
+    backend: LMDB
+  }
 }
 layer {
   name: "conv1"
@@ -406,13 +432,24 @@ layer {
   name: "region"
   type: "RegionLoss"
   bottom: "conv9"
+  bottom: "label"
   top: "region"
   region_loss_param {
     side: 13
     num: 5
     num_classes: 20
     coords: 4
-    threshold: 0.24
+    softmax: true
+    jitter: 0.2
+    rescore: 1
+    object_scale: 5.0
+    noobject_scale: 1.0
+    class_scale: 1.0
+    coord_scale: 1.0
+    absolute: 1
+    threshold: 0.6
+    random: 0
+
     biases: 1.08
     biases: 1.19
     biases: 3.42

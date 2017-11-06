@@ -923,6 +923,7 @@ layer {
     num: 5
     num_classes: 20
     coords: 4
+    softmax: true
     threshold: 0.24
     biases: 1.3221
     biases: 1.73145

@@ -130,6 +130,9 @@ bool DecodeDatumNative(Datum* datum);
 bool DecodeDatum(Datum* datum, bool is_color);
 
 #ifdef USE_OPENCV
+cv::Mat LetterboxImageToCVMat(const string& filename, int width, int height,
+    int *ori_w, int *ori_h);
+
 cv::Mat ReadImageToCVMat(const string& filename,
     const int height, const int width, const bool is_color);
 
@@ -148,15 +151,12 @@ void CVMatToDatum(const cv::Mat& cv_img, Datum* datum);
 
 bool ReadBoxDataToDatum(const std::string& filename, const std::string& annoname,
     const std::map<std::string, int>& label_map, const int height, const int width,
-    const bool is_color, const std::string & encoding, Datum* datum);
+    const std::string & encoding, Datum* datum);
 
 #endif  // USE_OPENCV
 
 void ParseXmlToDatum(const std::string& annoname, const std::map<std::string, int>& label_map,
-    int ori_w, int ori_h, Datum* datum);
-
-bool ReadFileToDatum(const std::string& filename, const string& annoname,
-    const std::map<std::string, int>& label_map, int ori_w, int ori_h, Datum* datum);
+    int ori_w, int ori_h, int new_w, int new_h, Datum* datum);
 
 }  // namespace caffe
 

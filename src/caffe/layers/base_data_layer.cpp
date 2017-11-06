@@ -25,6 +25,7 @@ void BaseDataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   } else {
     output_labels_ = true;
   }
+  box_label_ = false;
   data_transformer_.reset(
       new DataTransformer<Dtype>(transform_param_, this->phase_));
   data_transformer_->InitRand();
@@ -56,7 +57,13 @@ void BasePrefetchingDataLayer<Dtype>::LayerSetUp(
   for (int i = 0; i < prefetch_.size(); ++i) {
     prefetch_[i]->data_.mutable_cpu_data();
     if (this->output_labels_) {
-      prefetch_[i]->label_.mutable_cpu_data();
+      if (this->box_label_) {
+        for (int j = 0; j < top.size() - 1; ++j) {
+          prefetch_[i]->multi_label_[j]->mutable_cpu_data();
+        }
+      } else {
+        prefetch_[i]->label_.mutable_cpu_data();
+      }
     }
   }
 #ifndef CPU_ONLY
@@ -64,7 +71,13 @@ void BasePrefetchingDataLayer<Dtype>::LayerSetUp(
     for (int i = 0; i < prefetch_.size(); ++i) {
       prefetch_[i]->data_.mutable_gpu_data();
       if (this->output_labels_) {
-        prefetch_[i]->label_.mutable_gpu_data();
+        if (this->box_label_) {
+          for (int j = 0; j < top.size() - 1; ++j) {
+            prefetch_[i]->multi_label_[j]->mutable_gpu_data();
+          }
+        } else {
+          prefetch_[i]->label_.mutable_gpu_data();
+        }
       }
     }
   }
@@ -92,7 +105,13 @@ void BasePrefetchingDataLayer<Dtype>::InternalThreadEntry() {
       if (Caffe::mode() == Caffe::GPU) {
         batch->data_.data().get()->async_gpu_push(stream);
         if (this->output_labels_) {
-          batch->label_.data().get()->async_gpu_push(stream);
+          if (this->box_label_) {
+            for (int i = 0; i < batch->multi_label_.size(); ++i) {
+              batch->multi_label_[i]->data().get()->async_gpu_push(stream);
+            }
+          } else {
+            batch->label_.data().get()->async_gpu_push(stream);
+          }
         }
         CUDA_CHECK(cudaStreamSynchronize(stream));
       }
@@ -121,8 +140,15 @@ void BasePrefetchingDataLayer<Dtype>::Forward_cpu(
   top[0]->set_cpu_data(prefetch_current_->data_.mutable_cpu_data());
   if (this->output_labels_) {
     // Reshape to loaded labels.
-    top[1]->ReshapeLike(prefetch_current_->label_);
-    top[1]->set_cpu_data(prefetch_current_->label_.mutable_cpu_data());
+    if (this->box_label_) {
+      for (int i = 0; i < top.size() - 1; ++i) {
+        top[i+1]->ReshapeLike(*(prefetch_current_->multi_label_[i]));
+        top[i+1]->set_cpu_data(prefetch_current_->multi_label_[i]->mutable_cpu_data());
+      }
+    } else {
+      top[1]->ReshapeLike(prefetch_current_->label_);
+      top[1]->set_cpu_data(prefetch_current_->label_.mutable_cpu_data());
+    }
   }
 }
 

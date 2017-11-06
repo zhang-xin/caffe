@@ -16,8 +16,15 @@ void BasePrefetchingDataLayer<Dtype>::Forward_gpu(
   top[0]->set_gpu_data(prefetch_current_->data_.mutable_gpu_data());
   if (this->output_labels_) {
     // Reshape to loaded labels.
-    top[1]->ReshapeLike(prefetch_current_->label_);
-    top[1]->set_gpu_data(prefetch_current_->label_.mutable_gpu_data());
+    if (this->box_label_) {
+      for (int i = 0; i < top.size() - 1; ++i) {
+        top[i+1]->ReshapeLike(*(prefetch_current_->multi_label_[i]));
+        top[i+1]->set_gpu_data(prefetch_current_->multi_label_[i]->mutable_gpu_data());
+      }
+    } else {
+      top[1]->ReshapeLike(prefetch_current_->label_);
+      top[1]->set_gpu_data(prefetch_current_->label_.mutable_gpu_data());
+    }
   }
 }
 

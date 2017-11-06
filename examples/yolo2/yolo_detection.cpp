@@ -14,6 +14,7 @@
 #include "boost/algorithm/string.hpp"
 #include "caffe/caffe.hpp"
 #include "caffe/layers/region_layer.hpp"
+#include "caffe/util/bbox_util.hpp"
 #include "caffe/util/signal_handler.h"
 #include "caffe/util/db.hpp"
 
@@ -92,23 +93,6 @@ int nms_comparator(const void *pa, const void *pb)
   return 0;
 }
 
-template <typename Dtype>
-Dtype Overlap(Dtype x1, Dtype w1, Dtype x2, Dtype w2) {
-  Dtype left = std::max(x1 - w1 / 2, x2 - w2 / 2);
-  Dtype right = std::min(x1 + w1 / 2, x2 + w2 / 2);
-  return right - left;
-}
-
-template <typename Dtype>
-Dtype Calc_iou(const vector<Dtype>& box, const vector<Dtype>& truth) {
-  Dtype w = Overlap(box[0], box[2], truth[0], truth[2]);
-  Dtype h = Overlap(box[1], box[3], truth[1], truth[3]);
-  if (w < 0 || h < 0) return 0;
-  Dtype inter_area = w * h;
-  Dtype union_area = box[2] * box[3] + truth[2] * truth[3] - inter_area;
-  return inter_area / union_area;
-}
-
 void do_nms_sort(float *box_data, float *prob_data, int total_size, int num_classes) {
   sortable_bbox *s = new sortable_bbox[total_size];
 
@@ -136,7 +120,7 @@ void do_nms_sort(float *box_data, float *prob_data, int total_size, int num_clas
         b.push_back(box_data[s[j].index_ * 4 + 1]);
         b.push_back(box_data[s[j].index_ * 4 + 2]);
         b.push_back(box_data[s[j].index_ * 4 + 3]);
-        if (Calc_iou(a, b) > FLAGS_nms) {
+        if (caffe::box_iou(a, b) > FLAGS_nms) {
           prob_data[s[j].index_*(num_classes + 1) + c] = 0;
         }
       }

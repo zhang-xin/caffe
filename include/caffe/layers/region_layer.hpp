@@ -1,5 +1,5 @@
-#ifndef CAFFE_REGION_LOSS_LAYER_HPP_
-#define CAFFE_REGION_LOSS_LAYER_HPP_
+#ifndef CAFFE_REGION_LAYER_HPP_
+#define CAFFE_REGION_LAYER_HPP_
 
 #include <vector>
 #include "caffe/blob.hpp"
@@ -22,39 +22,25 @@ class RegionLayer : public Layer<Dtype> {
 
   int height_;
   int width_;
-  int bias_match_;
   int num_class_;
   int coords_;
   int num_;
-  int softmax_;
+  bool softmax_;
   int batch_;
-  float jitter_;
-  int rescore_;
-  int absolute_;
   float thresh_;
-  int random_;
+  vector<Dtype> biases_;
+
 
  protected:
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
   virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
-	  const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom){
-	  for (int i = 0; i < propagate_down.size(); ++i) {
-		  if (propagate_down[i]) { NOT_IMPLEMENTED; }
-	  }
-  }
-
-  vector<Dtype> biases_;
-
-  inline int entry_index(int batch, int location, int entry) {
-    int n = location / (width_ * height_);
-    int loc = location % (width_ * height_);
-    int outputs = height_ * width_ * num_ * (num_class_ + coords_ + 1);
-    return batch * outputs + n * outputs / num_ + entry * width_ * height_ + loc;
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
+    NOT_IMPLEMENTED;
   }
 };
 
 }  // namespace caffe
 
-#endif  // CAFFE_REGION_LOSS_LAYER_HPP_
+#endif  // CAFFE_REGION_LAYER_HPP_

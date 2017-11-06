@@ -69,7 +69,7 @@ float JaccardOverlap(const NormalizedBBox& bbox1, const NormalizedBBox& bbox2,
     float bbox2_size = BBoxSize(bbox2, normalized);
     return intersect_size / (bbox1_size + bbox2_size - intersect_size);
   } else {
-    return 0.;
+    return 0.0f;
   }
 }
 
