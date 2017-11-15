@@ -1,7 +1,17 @@
 # Caffe
 
-[![Build Status](https://travis-ci.org/BVLC/caffe.svg?branch=master)](https://travis-ci.org/BVLC/caffe)
-[![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
+## Yolo2 on Caffe
+
+This yolo2 branch is a port of yolo2 darknet to Caffe, the code is modified from these following repositories:
+- https://github.com/gklz1982/caffe-yolov2
+- https://github.com/zhangnju/caffe/tree/yolo
+
+Network prototxt and scripts for training/inference is at examples/yolo2.
+- examples/yolo2/yolo_detection.cpp could be used to test a picture.
+- examples/yolo2/data/convert.sh generates lmdb for training. Images are letterboxed as in yolo2 provided weights are trained on, the script converting yolo2 weights to caffemodel is also provided.
+- To do training please note the file path in script and prototxt. Tested on VOC dataset.
+
+## Caffe
 
 Caffe is a deep learning framework made with expression, speed, and modularity in mind.
 It is developed by Berkeley AI Research ([BAIR](http://bair.berkeley.edu))/The Berkeley Vision and Learning Center (BVLC) and community contributors.
