@@ -14,10 +14,12 @@ def convert(deploy, weights, model):
     # start from the 5th entry, the first 4 entries are major, minor, revision and net.seen
     print(net_weights.shape)
     count = 0
+    batch_norm = None
+    conv_bias = None
     for pr in net.params.keys():
         lidx = list(net._layer_names).index(pr)
         layer = net.layers[lidx]
-        if count == net_weights.shape[0]:
+        if count == net_weights.shape[0] and batch_norm is None:
             print("WARNING: no weights left for %s" % pr)
             break
         if layer.type == 'Convolution':
