@@ -133,7 +133,7 @@ Dtype delta_region_box(vector<Dtype> truth, Dtype* x, vector<Dtype> biases, int 
   pred.clear();
   pred = get_region_box(x, biases, n, index, i, j, w, h);
 
-  float iou = Calc_iou(pred, truth);
+  float iou = box_iou(pred, truth);
   float tx = truth[0] * w - i;
   float ty = truth[1] * h - j;
   float tw = log(truth[2] * w / biases[2*n]);
@@ -208,6 +208,7 @@ void RegionLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom, con
       for (int h = 0; h < swap.height(); ++h) {
         int index = b * swap.channels() * swap.height() * swap.width() + c * swap.height() * swap.width() +
                     h * swap.width() + 4;
+        // sigmoid on all confidences
         swap_data[index] = sigmoid(swap_data[index]);
         CHECK_GE(swap_data[index], 0);
       }
@@ -238,7 +239,6 @@ void RegionLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom, con
     }
   }
 
-  int best_num = 0;
   for (int b = 0; b < swap.num(); ++b) {
     if (softmax_tree_ != "") {
       int onlyclass = 0;
@@ -301,14 +301,13 @@ void RegionLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom, con
             truth.push_back(y);
             truth.push_back(w);
             truth.push_back(h);
-            Dtype iou = Calc_iou(pred, truth);
+            Dtype iou = box_iou(pred, truth);
             if (iou > best_iou) best_iou = iou;
           }
           avg_anyobj += swap_data[index + 4];
           diff[index + 4] = -1 * noobject_scale_ * (0 - swap_data[index + 4]) * (swap_data[index + 4]) *
                             (1 - swap_data[index + 4]);
           if (best_iou > thresh_) {
-            best_num++;
             diff[index + 4] = 0;
           }
           if (iter < 12800 / bottom[0]->num()) {
@@ -332,7 +331,7 @@ void RegionLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom, con
       float y = label_data[t * 5 + b * 30 * 5 + 2];
       float w = label_data[t * 5 + b * 30 * 5 + 3];
       float h = label_data[t * 5 + b * 30 * 5 + 4];
-      if (!w) break;
+      if (!x) break;
       truth.push_back(x);
       truth.push_back(y);
       truth.push_back(w);
@@ -361,18 +360,20 @@ void RegionLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom, con
         }
         pred[0] = 0;
         pred[1] = 0;
-        float iou = Calc_iou(pred, truth_shift);
+        float iou = box_iou(pred, truth_shift);
         if (iou > best_iou) {
           best_index = index;
           best_iou = iou;
           best_n = n;
         }
       }
-      float iou = delta_region_box(truth, swap_data, biases_, best_n, best_index, i, j, side_, side_, diff, coord_scale_);
+      float iou = delta_region_box(truth, swap_data, biases_, best_n, best_index, i, j, side_, side_, diff,
+                                   coord_scale_ * (2 - truth[2] * truth[3]));
       if (iou > 0.5)recall += 1;
       avg_iou += iou;
       avg_obj += swap_data[best_index + 4];
-      diff[best_index + 4] = (-1.0) * object_scale_ * (1 - swap_data[best_index + 4]) * (swap_data[best_index + 4] * (1 - swap_data[best_index + 4]));
+      diff[best_index + 4] = (-1.0) * object_scale_ * (1 - swap_data[best_index + 4]) *
+                             swap_data[best_index + 4] * (1 - swap_data[best_index + 4]);
 
       if (class_map_ != "") class_label = cls_map_[class_label];
       delta_region_class(swap_data, diff, best_index + 5, class_label, num_class_, softmax_tree_, &t_, class_scale_, &avg_cat); //softmax_tree_

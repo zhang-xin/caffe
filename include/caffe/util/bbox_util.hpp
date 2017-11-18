@@ -73,7 +73,7 @@ void GetDetectionResults(const Dtype* det_data, const int num_det,
     Dtype h = det_data[start_idx + 6];
 
     setNormalizedBBox(bbox, x, y, w, h);
-    bbox.set_score(det_data[start_idx + 2]); //confidence   
+    bbox.set_score(det_data[start_idx + 2]); //confidence
     (*all_detections)[item_id][label].push_back(bbox);
   }
 }
@@ -243,7 +243,7 @@ template bool SortScorePairDescend(const pair<float, int>& pair1,
                                    const pair<float, int>& pair2);
 template bool SortScorePairDescend(const pair<float, pair<int, int> >& pair1,
                                    const pair<float, pair<int, int> >& pair2);
-              
+
 
 }  // namespace caffe
 

@@ -8,6 +8,7 @@ layer {
     phase: TRAIN
   }
   transform_param {
+    random: true
     scale: 0.00390625
   }
   data_param {

@@ -157,7 +157,7 @@ void DataTransformer<Dtype>::Transform(const Datum& datum,
     cv_img = DecodeDatumToCVMatNative(datum);
   }
 
-  if (phase_ == TEST || phase_ == TRAIN) {
+  if (phase_ == TEST) {
     *box_labels = ori_labels;
     Transform(cv_img, transformed_blob);
     return;
@@ -596,7 +596,7 @@ vector<int> DataTransformer<Dtype>::InferBlobShape(
 template <typename Dtype>
 void DataTransformer<Dtype>::InitRand() {
   const bool needs_rand = param_.mirror() ||
-      (phase_ == TRAIN && param_.crop_size());
+      (phase_ == TRAIN && param_.crop_size()) || param_.random();
   if (needs_rand) {
     const unsigned int rng_seed = caffe_rng_rand();
     rng_.reset(new Caffe::RNG(rng_seed));
