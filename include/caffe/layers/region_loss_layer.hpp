@@ -16,7 +16,7 @@ template <typename Dtype>
 class RegionLossLayer : public LossLayer<Dtype> {
  public:
   explicit RegionLossLayer(const LayerParameter& param)
-      : LossLayer<Dtype>(param), diff_() {}
+      : LossLayer<Dtype>(param), delta_(), output_() {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
@@ -52,8 +52,8 @@ class RegionLossLayer : public LossLayer<Dtype> {
   float noobject_scale_;
   float coord_scale_;
 
-  Blob<Dtype> diff_;
-  Blob<Dtype> real_diff_;
+  Blob<Dtype> delta_;
+  Blob<Dtype> output_;
 
   string softmax_tree_;
   tree t_;

@@ -157,7 +157,7 @@ void DataTransformer<Dtype>::Transform(const Datum& datum,
     cv_img = DecodeDatumToCVMatNative(datum);
   }
 
-  if (phase_ == TEST) {
+  if (phase_ == TEST || !param_.random()) {
     *box_labels = ori_labels;
     Transform(cv_img, transformed_blob);
     return;

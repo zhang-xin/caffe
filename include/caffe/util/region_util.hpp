@@ -8,7 +8,7 @@
 namespace caffe {
 
 template <typename Dtype>
-inline void softmax_op(Dtype* input, int classes, int stride) {
+inline void softmax_op(const Dtype* input, int classes, int stride, Dtype* output) {
   Dtype sum = 0;
   Dtype large = -FLT_MAX;
   for (int i = 0; i < classes; ++i) {
@@ -18,18 +18,19 @@ inline void softmax_op(Dtype* input, int classes, int stride) {
   for (int i = 0; i < classes; ++i) {
     Dtype e = exp(input[i * stride] - large);
     sum += e;
-    input[i * stride] = e;
+    output[i * stride] = e;
   }
   for (int i = 0; i < classes; ++i) {
-    input[i * stride] /= sum;
+    output[i * stride] /= sum;
   }
 }
 
 template <typename Dtype>
-inline void softmax_cpu(Dtype *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride) {
+inline void softmax_cpu(const Dtype *input, Dtype *output, int n, int batch, int batch_offset, int groups,
+                        int group_offset, int stride) {
   for (int b = 0; b < batch; ++b) {
     for (int g = 0; g < groups; ++g) {
-      softmax_op(input + b*batch_offset + g*group_offset, n, stride);
+      softmax_op(input + b * batch_offset + g * group_offset, n, stride, output + b * batch_offset + g * group_offset);
     }
   }
 }
@@ -58,24 +59,24 @@ inline int entry_index(int batch, int location, int entry, int num, int width, i
 }
 
 template <typename Dtype>
-inline void forward_softmax(Dtype *input_data, int batch, int num, int width, int height, int coords, int num_class,
-                            bool softmax) {
+inline void forward_softmax(const Dtype *input_data, Dtype *output_data, int batch, int num, int width, int height,
+                            int coords, int num_class, bool softmax) {
   for (int b = 0; b < batch; b++) {
     for (int n = 0; n < num; n++) {
       int index = entry_index(b, n * width * height, 0, num, width, height, coords, num_class);
       for (int k = 0; k < 2 * width * height; k++) {
-        input_data[index + k] = sigmoid(input_data[index + k]);
+        output_data[index + k] = sigmoid(input_data[index + k]);
       }
       index = entry_index(b, n * width * height, coords, num, width, height, coords, num_class);
       for (int k = 0; k < width * height; k++) {
-        input_data[index + k] = sigmoid(input_data[index + k]);
+        output_data[index + k] = sigmoid(input_data[index + k]);
       }
     }
   }
   if (softmax) {
     int index = entry_index(0, 0, coords + 1, num, width, height, coords, num_class);
-    softmax_cpu(input_data + index, num_class, batch * num, height * width * (num_class + coords + 1),
-                width * height, 1, width * height);
+    softmax_cpu(input_data + index, output_data + index, num_class, batch * num,
+                height * width * (num_class + coords + 1), width * height, 1, width * height);
   }
 }
 

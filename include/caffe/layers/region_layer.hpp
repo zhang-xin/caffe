@@ -12,7 +12,7 @@ template <typename Dtype>
 class RegionLayer : public Layer<Dtype> {
  public:
   explicit RegionLayer(const LayerParameter& param)
-	  : Layer<Dtype>(param) {}
+	  : Layer<Dtype>(param), output_() {}
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
@@ -29,6 +29,7 @@ class RegionLayer : public Layer<Dtype> {
   int batch_;
   float thresh_;
   vector<Dtype> biases_;
+  Blob<Dtype> output_;
 
 
  protected:

@@ -10,6 +10,8 @@ namespace caffe {
 
 template <typename Dtype>
 void RegionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+  output_.ReshapeLike(*bottom[0]);
+
   // reshpe top blob
   vector<int> box_shape(4);
   box_shape[0] = num_;
@@ -51,13 +53,15 @@ void RegionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom, const ve
 
 template <typename Dtype>
 void RegionLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  Dtype* input_data = bottom[0]->mutable_cpu_data();
+  const Dtype* input_data = bottom[0]->cpu_data();
   Dtype* box_data = top[0]->mutable_cpu_data();
   Dtype* prob_data = top[1]->mutable_cpu_data();
 
-  forward_softmax<Dtype>(input_data, batch_, num_, width_, height_, coords_, num_class_, softmax_);
+  Dtype* output = output_.mutable_cpu_data();
+  caffe_copy(output_.count(), input_data, output);
+  forward_softmax<Dtype>(input_data, output, batch_, num_, width_, height_, coords_, num_class_, softmax_);
 
-  get_region_boxes<Dtype>(input_data, box_data, prob_data, num_, width_, height_, coords_, num_class_,
+  get_region_boxes<Dtype>(output, box_data, prob_data, num_, width_, height_, coords_, num_class_,
                           thresh_, biases_);
 }
 
