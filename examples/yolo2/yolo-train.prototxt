@@ -45,6 +45,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -93,6 +96,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -141,6 +147,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -178,6 +187,9 @@ layer {
     pad: 0
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -215,6 +227,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -263,6 +278,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -300,6 +318,9 @@ layer {
     pad: 0
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -337,6 +358,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -385,6 +409,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -422,6 +449,9 @@ layer {
     pad: 0
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -459,6 +489,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -496,6 +529,9 @@ layer {
     pad: 0
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -533,6 +569,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -581,6 +620,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -618,6 +660,9 @@ layer {
     pad: 0
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -655,6 +700,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -692,6 +740,9 @@ layer {
     pad: 0
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -729,6 +780,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -766,6 +820,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -803,6 +860,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -846,6 +906,9 @@ layer {
     stride: 1
     pad: 0
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -899,6 +962,9 @@ layer {
     pad: 1
     stride: 1
     bias_term: false
+    weight_filler {
+      type: "xavier"
+    }
   }
 }
 layer {
@@ -936,6 +1002,12 @@ layer {
     stride: 1
     pad: 0
     bias_term: true
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 layer {
